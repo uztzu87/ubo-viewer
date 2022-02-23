@@ -44,6 +44,7 @@ const draw = (data, container, imagesPath, labelLimit = 8, rankDir = 'LR') => {
   edges.forEach((edge) =>
     g.setEdge(edge.source, edge.target, {
       class: edge.class || '',
+      edgeType: edge.interestRelationship,
       ...edge.config,
     })
   );
@@ -87,6 +88,13 @@ const draw = (data, container, imagesPath, labelLimit = 8, rankDir = 'LR') => {
         .attr('x', '10')
         .attr('y', '-80')
         .attr('class', 'injectable');
+    }
+  });
+
+  // set all indirect relationships to dashed lines
+  inner.selectAll('g.edge').each(function (d, i) {
+    if (g.node(d).interestRelationship !== null) {
+      d3.select(this).style('stroke-dasharray', '3, 3');
     }
   });
 
@@ -169,7 +177,7 @@ const draw = (data, container, imagesPath, labelLimit = 8, rankDir = 'LR') => {
       .each(function () {
         const path = d3.select(this);
         const newBezier = Bezier.SVGtoBeziers(path.attr('d'));
-        const offsetCurve = newBezier.offset(-20);
+        const offsetCurve = newBezier.offset(25);
         path.attr('d', bezierBuilder(offsetCurve));
       });
   };
@@ -202,7 +210,7 @@ const draw = (data, container, imagesPath, labelLimit = 8, rankDir = 'LR') => {
       .each(function () {
         const path = d3.select(this);
         const newBezier = Bezier.SVGtoBeziers(path.attr('d'));
-        const offsetCurve = newBezier.offset(35);
+        const offsetCurve = newBezier.offset(-15);
         path.attr('d', bezierBuilder(offsetCurve));
       });
   };
@@ -220,7 +228,8 @@ const draw = (data, container, imagesPath, labelLimit = 8, rankDir = 'LR') => {
         return '#controlText' + index;
       })
       .attr('startOffset', '50%')
-      .text(sanitise(controlText));
+      .text(sanitise(controlText))
+      .style('fill', '#349aee');
   };
 
   const createOwnText = (index, shareText) => {
@@ -236,7 +245,8 @@ const draw = (data, container, imagesPath, labelLimit = 8, rankDir = 'LR') => {
         return '#ownText' + index;
       })
       .attr('startOffset', '50%')
-      .text(sanitise(shareText));
+      .text(sanitise(shareText))
+      .style('fill', '#652eb1');
   };
 
   const createUnknownText = (index, element) => {
