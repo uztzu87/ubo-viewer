@@ -246,7 +246,18 @@ const draw = (data, container, imagesPath, labelLimit = 8, rankDir = 'LR') => {
   };
 
   const createUnknownText = (index, element) => {
-    d3.select(element).select('path').attr('id', `unknown${index}`);
+    d3.select(element)
+      .clone(true)
+      .select('path')
+      .attr('id', `unknown${index}`)
+      .attr('style', 'fill: none;')
+      .attr('marker-end', '')
+      .each(function () {
+        const path = d3.select(this);
+        const newBezier = Bezier.SVGtoBeziers(path.attr('d'));
+        const offsetCurve = newBezier.offset(-10);
+        path.attr('d', bezierBuilder(offsetCurve));
+      });
     svg
       .select('.edgeLabels')
       .append('g')
