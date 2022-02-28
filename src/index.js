@@ -91,13 +91,6 @@ const draw = (data, container, imagesPath, labelLimit = 8, rankDir = 'LR') => {
     }
   });
 
-  // set all indirect relationships to dashed lines
-  inner.selectAll('g.edge').each(function (d, i) {
-    if (g.node(d).interestRelationship !== null) {
-      d3.select(this).style('stroke-dasharray', '3, 3');
-    }
-  });
-
   // create arrowhead markers for edge termination
   svg
     .append('defs')
@@ -149,7 +142,7 @@ const draw = (data, container, imagesPath, labelLimit = 8, rankDir = 'LR') => {
   });
 
   // define the additional curves and text for ownership and control edges
-  const createOwnershipCurve = (element, index, shareStroke, curveOffset, ended) => {
+  const createOwnershipCurve = (element, index, shareStroke, curveOffset, ended, interestRelationship) => {
     d3.select(element)
       .clone(true)
       .attr('class', 'edgePath own')
@@ -158,8 +151,9 @@ const draw = (data, container, imagesPath, labelLimit = 8, rankDir = 'LR') => {
       .attr('marker-end', 'url(#arrow-own)')
       .attr(
         'style',
-        `fill: none; stroke: #652eb1; stroke-width: 1px; stroke-width: ${shareStroke}px;
-        opacity: ${ended ? '0.3' : '1'}`
+        `fill: none; stroke: #652eb1; stroke-width: ${shareStroke}px; ${
+          interestRelationship === 'indirect' ? 'stroke-dasharray: 3,3' : ''
+        }; opacity: ${ended ? '0.3' : '1'}`
       )
       .each(function () {
         const path = d3.select(this);
@@ -191,7 +185,9 @@ const draw = (data, container, imagesPath, labelLimit = 8, rankDir = 'LR') => {
       .attr('marker-end', 'url(#arrow-control)')
       .attr(
         'style',
-        `fill: none; stroke: #349aee; stroke-width: 1px; stroke-width: ${controlStroke}px;
+        `fill: none; stroke: #349aee; stroke-width: 1px; stroke-width: ${controlStroke}px; ${
+          interestRelationship === 'indirect' ? 'stroke-dasharray: 3,3' : ''
+        };
         opacity: ${ended ? '0.3' : '1'}`
       )
       .each(function () {
@@ -267,8 +263,9 @@ const draw = (data, container, imagesPath, labelLimit = 8, rankDir = 'LR') => {
   };
 
   // use the previous function to calculate the new edges using control and ownership values
+  // this section could do with a refactor and move more of the logic into edges.js
   edges.forEach((edge, index) => {
-    const { source, target, interests } = edge;
+    const { source, target, interests, interestRelationship } = edge;
     const { shareholding, votingRights } = interests;
 
     let shareStroke = 1;
@@ -297,13 +294,18 @@ const draw = (data, container, imagesPath, labelLimit = 8, rankDir = 'LR') => {
     const controlOffset = -(controlStroke / 2);
     const element = g.edge(source, target).elem;
 
+    // set all indirect relationships to dashed lines
+    if (interestRelationship === 'indirect') {
+      d3.select(element).style('stroke-dasharray', '3, 3');
+    }
+
     if ('shareholding' in interests) {
       const ended = shareholding ? shareholding.ended : false;
-      createOwnershipCurve(element, index, shareStroke, shareOffset, ended);
+      createOwnershipCurve(element, index, shareStroke, shareOffset, ended, interestRelationship);
     }
     if ('votingRights' in interests) {
       const ended = votingRights ? votingRights.ended : false;
-      createControlCurve(element, index, controlStroke, controlOffset, ended);
+      createControlCurve(element, index, controlStroke, controlOffset, ended, interestRelationship);
     }
 
     // this will allow the labels to be turned off if there are too many nodes and edge labels overlap
